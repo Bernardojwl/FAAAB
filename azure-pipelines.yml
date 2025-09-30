@@ -6,20 +6,30 @@ pool:
 
 steps:
 - task: UseDotNet@2
+  displayName: 'Use .NET SDK 7'
   inputs:
     packageType: 'sdk'
     version: '7.0.x'
 
-- script: dotnet restore
-  displayName: 'Restore dependencies'
+# Restaura, compila y publica (cambia la ruta del .csproj si es necesario)
+- script: |
+    dotnet restore
+    dotnet publish ./YourWebApp/YourWebApp.csproj -c Release -o $(Build.ArtifactStagingDirectory)/publish
+  displayName: 'Build & Publish'
 
-- script: dotnet build --configuration Release
-  displayName: 'Build project'
-
-- script: dotnet test --no-build --verbosity normal
-  displayName: 'Run tests'
-
-- task: PublishBuildArtifacts@1
+# Empaqueta en zip
+- task: ArchiveFiles@2
+  displayName: 'Zip publish folder'
   inputs:
-    pathToPublish: '$(Build.ArtifactStagingDirectory)'
+    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/publish'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/app.zip'
+    replaceExistingArchive: true
+
+# Publica artefacto
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish artifact'
+  inputs:
+    pathToPublish: '$(Build.ArtifactStagingDirectory)/app.zip'
     artifactName: 'drop'

@@ -4,38 +4,14 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
-stages:
-# --------- BUILD (publica README como artefacto) ----------
-- stage: Build
-  displayName: Build (README only)
-  jobs:
-  - job: Build
-    steps:
-    - script: |
-        test -f README.md || (echo "No hay README.md en la raíz" && exit 1)
-        mkdir -p $(Build.ArtifactStagingDirectory)
-        cp README.md $(Build.ArtifactStagingDirectory)/
-      displayName: "Copiar README.md"
-    - publish: $(Build.ArtifactStagingDirectory)
-      artifact: drop
-      displayName: "Publicar artefacto (README)"
+steps:
+- script: |
+    test -f README.md || (echo "No hay README.md en la raíz" && exit 1)
+    mkdir -p $(Build.ArtifactStagingDirectory)
+    cp README.md $(Build.ArtifactStagingDirectory)/
+  displayName: "Copiar README.md"
 
-# --------- DEPLOY (simbólico) ----------
-- stage: Deploy
-  displayName: Deploy (symbolic)
-  dependsOn: Build
-  jobs:
-  - deployment: DeployToDev
-    displayName: "Deploy to Dev (Environment)"
-    environment: "Dev"         # <<< crea/usa el Environment 'Dev'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - download: current
-            artifact: drop
-          - script: |
-              echo "Desplegando README.md a 'Dev' (simbólico)."
-              echo "Contenido (primeras líneas):"
-              head -n 20 $(Pipeline.Workspace)/drop/README.md || true
-            displayName: "Simular despliegue del README"
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathToPublish: '$(Build.ArtifactStagingDirectory)'
+    artifactName: 'drop'
